@@ -30,12 +30,17 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Configure Java and Kotlin targets
+      - name: Force Java compatibility to 17
         run: |
           PROJECT_DIR=$(dirname "$(find project -name settings.gradle | head -n 1)")
           cd "$PROJECT_DIR"
-          sed -i 's/sourceCompatibility JavaVersion.VERSION_1_8/sourceCompatibility JavaVersion.VERSION_17/' app/build.gradle
-          sed -i 's/targetCompatibility JavaVersion.VERSION_1_8/targetCompatibility JavaVersion.VERSION_17/' app/build.gradle
+          sed -i 's/VERSION_1_8/VERSION_17/g' app/build.gradle
+          echo "Checking Java and Kotlin settings:"
+          grep -nE 'sourceCompatibility|targetCompatibility|jvmTarget' app/build.gradle
+          if grep -q 'VERSION_1_8' app/build.gradle; then
+            echo "Java 1.8 setting still exists."
+            exit 1
+          fi
 
       - name: Build Android APK
         run: |
