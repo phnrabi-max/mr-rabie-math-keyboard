@@ -1,4 +1,3 @@
-
 name: Build Mister Mohammed Rabie Math Keyboard
 
 on:
@@ -25,31 +24,14 @@ jobs:
         run: |
           unzip -q MisterMohammedRabieMathKeyboard_Source.zip -d project
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-
-      - name: Force Java compatibility to 17
+      - name: Inspect Android Gradle settings
         run: |
-          PROJECT_DIR=$(dirname "$(find project -name settings.gradle | head -n 1)")
-          cd "$PROJECT_DIR"
-          sed -i 's/VERSION_1_8/VERSION_17/g' app/build.gradle
-          echo "Checking Java and Kotlin settings:"
-          grep -nE 'sourceCompatibility|targetCompatibility|jvmTarget' app/build.gradle
-          if grep -q 'VERSION_1_8' app/build.gradle; then
-            echo "Java 1.8 setting still exists."
-            exit 1
-          fi
+          APP_FILE=$(find project -path "*/app/build.gradle" | head -n 1)
+          echo "APP FILE: $APP_FILE"
+          echo "========== BUILD.GRADLE =========="
+          cat "$APP_FILE"
+          echo "========== END BUILD.GRADLE =========="
 
-      - name: Build Android APK
+      - name: Stop after inspection
         run: |
-          PROJECT_DIR=$(dirname "$(find project -name settings.gradle | head -n 1)")
-          cd "$PROJECT_DIR"
-          gradle assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mister-Mohammed-Rabie-Math-Keyboard
-          path: project/**/build/outputs/apk/debug/*.apk
+          echo "Inspection completed successfully."
