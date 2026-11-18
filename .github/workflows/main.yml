@@ -1,3 +1,4 @@
+
 name: Build Mister Mohammed Rabie Math Keyboard
 
 on:
@@ -15,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -24,14 +25,45 @@ jobs:
         run: |
           unzip -q MisterMohammedRabieMathKeyboard_Source.zip -d project
 
-      - name: Inspect Android Gradle settings
+      - name: Configure Java and Kotlin
         run: |
           APP_FILE=$(find project -path "*/app/build.gradle" | head -n 1)
-          echo "APP FILE: $APP_FILE"
-          echo "========== BUILD.GRADLE =========="
-          cat "$APP_FILE"
-          echo "========== END BUILD.GRADLE =========="
+          python3 - "$APP_FILE" <<'PY'
+          import sys
+          from pathlib import Path
 
-      - name: Stop after inspection
+          p = Path(sys.argv[1])
+          s = p.read_text()
+          s = s.replace(
+              "    defaultConfig {",
+              """    compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+
+              defaultConfig {"""
+          )
+          p.write_text(s)
+          PY
+          cat "$APP_FILE"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build Android APK
         run: |
-          echo "Inspection completed successfully."
+          PROJECT_DIR=$(dirname "$(find project -name settings.gradle | head -n 1)")
+          cd "$PROJECT_DIR"
+          gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mister-Mohammed-Rabie-Math-Keyboard
+          path: project/**/build/outputs/apk/debug/*.apk
