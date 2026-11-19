@@ -28,15 +28,18 @@ jobs:
       - name: Configure Java and Kotlin
         run: |
           APP_FILE=$(find project -path "*/app/build.gradle" | head -n 1)
+
           python3 - "$APP_FILE" <<'PY'
           import sys
           from pathlib import Path
 
           p = Path(sys.argv[1])
           s = p.read_text()
-          s = s.replace(
-              "    defaultConfig {",
-              """    compileOptions {
+
+          if "compileOptions" not in s:
+              s = s.replace(
+                  "    defaultConfig {",
+                  """    compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
@@ -46,10 +49,17 @@ jobs:
               }
 
               defaultConfig {"""
-          )
+              )
+
           p.write_text(s)
           PY
-          cat "$APP_FILE"
+
+      - name: Inspect Kotlin error
+        run: |
+          PROJECT_DIR=$(dirname "$(find project -name settings.gradle | head -n 1)")
+          echo "========== MAIN ACTIVITY LINES 65-85 =========="
+          nl -ba "$PROJECT_DIR/app/src/main/java/com/mohammedrabie/mathkeyboard/MainActivity.kt" | sed -n '65,85p'
+          echo "========== END INSPECTION =========="
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
