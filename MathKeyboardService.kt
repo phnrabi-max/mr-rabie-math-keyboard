@@ -1,4 +1,3 @@
-
 package com.mohammedrabie.mathkeyboard
 
 import android.content.Intent
@@ -9,12 +8,15 @@ import android.inputmethodservice.InputMethodService
 import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.InputConnection
+import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 
 class MathKeyboardService : InputMethodService() {
+
+    private data class Key(val label: String, val value: String = label)
 
     private val pages = linkedMapOf(
         "عربي" to listOf(
@@ -85,11 +87,9 @@ class MathKeyboardService : InputMethodService() {
         val tabScroll = HorizontalScrollView(this).apply {
             isHorizontalScrollBarEnabled = false
         }
-
         val tabs = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
-
         pages.keys.forEach { page ->
             tabs.addView(makeButton(page, 12f, 44) {
                 currentPage = page
@@ -98,7 +98,6 @@ class MathKeyboardService : InputMethodService() {
                 setMargins(dp(2), 0, dp(2), dp(4))
             })
         }
-
         tabScroll.addView(tabs)
         rootLayout.addView(tabScroll)
 
@@ -110,15 +109,12 @@ class MathKeyboardService : InputMethodService() {
         val bottom = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
         }
-
         bottom.addView(makeButton("مسافة", 14f, 46) {
             currentInputConnection?.commitText(" ", 1)
         }, weightedParams())
-
         bottom.addView(makeButton("مسح", 14f, 46) {
             currentInputConnection?.deleteSurroundingText(1, 0)
         }, weightedParams())
-
         bottom.addView(makeButton("محرر المعادلات", 12f, 46) {
             val intent = packageManager.getLaunchIntentForPackage(packageName)
             if (intent != null) {
@@ -128,11 +124,9 @@ class MathKeyboardService : InputMethodService() {
                 Toast.makeText(this, "تعذر فتح محرر المعادلات", Toast.LENGTH_SHORT).show()
             }
         }, weightedParams())
-
         bottom.addView(makeButton("↵", 18f, 46) {
             currentInputConnection?.commitText("\n", 1)
         }, weightedParams())
-
         rootLayout.addView(bottom)
 
         showKeys()
@@ -144,14 +138,11 @@ class MathKeyboardService : InputMethodService() {
         keyArea.removeAllViews()
 
         val rows = pages[currentPage].orEmpty()
-
         rows.forEach { rowText ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
             }
-
             val labels = rowText.split(" ")
-
             labels.forEach { label ->
                 if (label.isNotBlank()) {
                     val value = valueFor(label)
@@ -160,7 +151,6 @@ class MathKeyboardService : InputMethodService() {
                     }, weightedParams())
                 }
             }
-
             keyArea.addView(row)
         }
     }
@@ -182,7 +172,6 @@ class MathKeyboardService : InputMethodService() {
 
     private fun insert(value: String) {
         val connection: InputConnection = currentInputConnection ?: return
-
         when (value) {
             "⌫" -> connection.deleteSurroundingText(1, 0)
             "↵", "\n" -> connection.commitText("\n", 1)
@@ -194,8 +183,7 @@ class MathKeyboardService : InputMethodService() {
             "x⁻²" -> connection.commitText("x^{-2}", 1)
             "أس↑" -> connection.commitText("^{ }", 1)
             "مؤشر↓" -> connection.commitText("_{ }", 1)
-            "كسر", "بسط", "مقام" ->
-                connection.commitText("\\frac{ }{ }", 1)
+            "كسر", "بسط", "مقام" -> connection.commitText("\\frac{ }{ }", 1)
             "جذر2" -> connection.commitText("\\sqrt{ }", 1)
             "جذر3" -> connection.commitText("\\sqrt[3]{ }", 1)
             "مسح" -> connection.deleteSurroundingText(1, 0)
@@ -208,34 +196,25 @@ class MathKeyboardService : InputMethodService() {
         textSize: Float,
         heightDp: Int,
         action: () -> Unit
-    ): TextView {
-        return TextView(this).apply {
+    ): Button {
+        return Button(this).apply {
             text = label
             this.textSize = textSize
-
-            includeFontPadding = false
-            isClickable = true
-            isFocusable = true
-
             setTextColor(Color.rgb(20, 43, 70))
             typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-
+            isAllCaps = false
             minHeight = 0
             minimumHeight = 0
             minWidth = 0
             minimumWidth = 0
-
+            gravity = Gravity.CENTER
             setPadding(dp(2), 0, dp(2), 0)
-
-            setBackground(GradientDrawable().apply {
+            background = GradientDrawable().apply {
                 setColor(Color.WHITE)
                 cornerRadius = dp(7).toFloat()
                 setStroke(dp(1), Color.rgb(180, 197, 218))
-            })
-
+            }
             setOnClickListener { action() }
-
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dp(heightDp)
