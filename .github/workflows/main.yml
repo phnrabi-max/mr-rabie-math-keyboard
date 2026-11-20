@@ -23,7 +23,7 @@ jobs:
 
       - name: Extract project ZIP
         run: |
-          unzip -q MisterMohammedRabieMathKeyboard_Source.zip -d project
+          unzip -q MisterMohammedRabieMathKeyboard.zip -d project
 
       - name: Install updated Math Keyboard Service
         run: |
