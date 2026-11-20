@@ -54,12 +54,34 @@ jobs:
           p.write_text(s)
           PY
 
-      - name: Inspect Kotlin error
+      - name: Fix Kotlin singleLine property
         run: |
-          PROJECT_DIR=$(dirname "$(find project -name settings.gradle | head -n 1)")
-          echo "========== MAIN ACTIVITY LINES 65-85 =========="
-          nl -ba "$PROJECT_DIR/app/src/main/java/com/mohammedrabie/mathkeyboard/MainActivity.kt" | sed -n '65,85p'
-          echo "========== END INSPECTION =========="
+          KOTLIN_FILE=$(find project -name MainActivity.kt | head -n 1)
+
+          python3 - "$KOTLIN_FILE" <<'PY'
+          import sys
+          from pathlib import Path
+
+          p = Path(sys.argv[1])
+          s = p.read_text()
+
+          old = "singleLine = true"
+          new = "setSingleLine(true)"
+
+          if old in s:
+              s = s.replace(old, new)
+              p.write_text(s)
+              print("SUCCESS: singleLine fixed")
+          elif new in s:
+              print("Already fixed")
+          else:
+              raise SystemExit("ERROR: Expected singleLine code was not found")
+
+          print("========== FIXED LINE ==========")
+          for line in s.splitlines():
+              if "setSingleLine(true)" in line:
+                  print(line)
+          PY
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
