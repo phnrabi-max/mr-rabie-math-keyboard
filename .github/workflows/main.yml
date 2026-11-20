@@ -25,6 +25,27 @@ jobs:
         run: |
           unzip -q MisterMohammedRabieMathKeyboard_Source.zip -d project
 
+      - name: Install updated Math Keyboard Service
+        run: |
+          SOURCE_FILE="$GITHUB_WORKSPACE/MathKeyboardService.kt"
+
+          if [ ! -f "$SOURCE_FILE" ]; then
+            echo "ERROR: Uploaded MathKeyboardService.kt was not found"
+            exit 1
+          fi
+
+          TARGET_FILE=$(find project -name "MathKeyboardService.kt" | head -n 1)
+
+          if [ -z "$TARGET_FILE" ]; then
+            echo "ERROR: Original MathKeyboardService.kt was not found inside project ZIP"
+            exit 1
+          fi
+
+          cp "$SOURCE_FILE" "$TARGET_FILE"
+
+          echo "SUCCESS: Updated keyboard service installed"
+          echo "Target: $TARGET_FILE"
+
       - name: Configure Java and Kotlin
         run: |
           APP_FILE=$(find project -path "*/app/build.gradle" | head -n 1)
