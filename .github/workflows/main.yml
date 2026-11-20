@@ -21,34 +21,51 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Extract project ZIP
+      - name: Check and Extract Project ZIP
         run: |
-          unzip -q MisterMohammedRabieMathKeyboard.zip -d project
+          ZIP_FILE="MisterMohammedRabieMathKeyboard_Source.zip"
 
-      - name: Install updated Math Keyboard Service
+          if [ ! -f "$ZIP_FILE" ]; then
+            echo "ERROR: Project ZIP file not found!"
+            echo "Files in repository:"
+            ls -lah
+            exit 1
+          fi
+
+          mkdir -p project
+          unzip -q "$ZIP_FILE" -d project
+
+          echo "SUCCESS: Project ZIP extracted"
+
+      - name: Install Updated Math Keyboard Service
         run: |
           SOURCE_FILE="$GITHUB_WORKSPACE/MathKeyboardService.kt"
 
           if [ ! -f "$SOURCE_FILE" ]; then
-            echo "ERROR: Uploaded MathKeyboardService.kt was not found"
+            echo "ERROR: MathKeyboardService.kt not found"
             exit 1
           fi
 
           TARGET_FILE=$(find project -name "MathKeyboardService.kt" | head -n 1)
 
           if [ -z "$TARGET_FILE" ]; then
-            echo "ERROR: Original MathKeyboardService.kt was not found inside project ZIP"
+            echo "ERROR: Original MathKeyboardService.kt not found"
             exit 1
           fi
 
           cp "$SOURCE_FILE" "$TARGET_FILE"
 
-          echo "SUCCESS: Updated keyboard service installed"
+          echo "SUCCESS: Keyboard service updated"
           echo "Target: $TARGET_FILE"
 
       - name: Configure Java and Kotlin
         run: |
           APP_FILE=$(find project -path "*/app/build.gradle" | head -n 1)
+
+          if [ -z "$APP_FILE" ]; then
+            echo "ERROR: app/build.gradle not found"
+            exit 1
+          fi
 
           python3 - "$APP_FILE" <<'PY'
           import sys
@@ -73,11 +90,17 @@ jobs:
               )
 
           p.write_text(s)
+          print("SUCCESS: Java and Kotlin configured")
           PY
 
-      - name: Fix Kotlin singleLine property
+      - name: Fix Kotlin singleLine Property
         run: |
           KOTLIN_FILE=$(find project -name MainActivity.kt | head -n 1)
+
+          if [ -z "$KOTLIN_FILE" ]; then
+            echo "ERROR: MainActivity.kt not found"
+            exit 1
+          fi
 
           python3 - "$KOTLIN_FILE" <<'PY'
           import sys
@@ -96,12 +119,8 @@ jobs:
           elif new in s:
               print("Already fixed")
           else:
-              raise SystemExit("ERROR: Expected singleLine code was not found")
+              print("No singleLine property needs fixing")
 
-          print("========== FIXED LINE ==========")
-          for line in s.splitlines():
-              if "setSingleLine(true)" in line:
-                  print(line)
           PY
 
       - name: Set up Gradle
@@ -111,8 +130,16 @@ jobs:
 
       - name: Build Android APK
         run: |
-          PROJECT_DIR=$(dirname "$(find project -name settings.gradle | head -n 1)")
+          SETTINGS_FILE=$(find project -name settings.gradle -o -name settings.gradle.kts | head -n 1)
+
+          if [ -z "$SETTINGS_FILE" ]; then
+            echo "ERROR: Gradle settings file not found"
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
           cd "$PROJECT_DIR"
+
           gradle assembleDebug
 
       - name: Upload APK
@@ -120,3 +147,4 @@ jobs:
         with:
           name: Mister-Mohammed-Rabie-Math-Keyboard
           path: project/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
